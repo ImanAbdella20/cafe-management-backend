@@ -11,8 +11,26 @@ import (
 	"gorm.io/gorm"
 )
 
-func resolveDatabaseDSN() string {
+func resolveEnvDatabaseURL() string {
 	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+	if databaseURL == "" {
+		return ""
+	}
+
+	// Ignore deployment template placeholders when running locally.
+	if strings.HasPrefix(databaseURL, "${{") && strings.HasSuffix(databaseURL, "}}") {
+		return ""
+	}
+
+	if strings.HasPrefix(databaseURL, "${") && strings.HasSuffix(databaseURL, "}") {
+		return ""
+	}
+
+	return databaseURL
+}
+
+func resolveDatabaseDSN() string {
+	databaseURL := resolveEnvDatabaseURL()
 	if databaseURL != "" {
 		return databaseURL
 	}
@@ -40,7 +58,7 @@ func resolveDatabaseDSN() string {
 }
 
 func resolveDatabaseURL() string {
-	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+	databaseURL := resolveEnvDatabaseURL()
 	if databaseURL != "" {
 		return databaseURL
 	}
