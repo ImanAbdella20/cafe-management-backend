@@ -12,8 +12,25 @@ import (
 	"gorm.io/gorm"
 )
 
+func getenvAny(keys ...string) string {
+	for _, key := range keys {
+		value := strings.TrimSpace(os.Getenv(key))
+		if value != "" {
+			return strings.Trim(value, "\"'")
+		}
+	}
+
+	return ""
+}
+
 func resolveEnvDatabaseURL() string {
-	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+	databaseURL := getenvAny(
+		"DATABASE_URL",
+		"POSTGRES_URL",
+		"POSTGRESQL_URL",
+		"DATABASE_PUBLIC_URL",
+		"RENDER_DATABASE_URL",
+	)
 	if databaseURL == "" {
 		return ""
 	}
@@ -41,12 +58,12 @@ func resolveDatabaseDSN() string {
 		return databaseURL
 	}
 
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	name := os.Getenv("DB_NAME")
-	sslmode := os.Getenv("DB_SSLMODE")
+	host := getenvAny("DB_HOST", "PGHOST")
+	port := getenvAny("DB_PORT", "PGPORT")
+	user := getenvAny("DB_USER", "PGUSER")
+	password := getenvAny("DB_PASSWORD", "PGPASSWORD")
+	name := getenvAny("DB_NAME", "PGDATABASE")
+	sslmode := getenvAny("DB_SSLMODE", "PGSSLMODE")
 
 	if strings.TrimSpace(host) == "" || strings.TrimSpace(port) == "" || strings.TrimSpace(user) == "" || strings.TrimSpace(name) == "" {
 		return ""
@@ -73,12 +90,12 @@ func resolveDatabaseURL() string {
 		return databaseURL
 	}
 
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	name := os.Getenv("DB_NAME")
-	sslmode := os.Getenv("DB_SSLMODE")
+	host := getenvAny("DB_HOST", "PGHOST")
+	port := getenvAny("DB_PORT", "PGPORT")
+	user := getenvAny("DB_USER", "PGUSER")
+	password := getenvAny("DB_PASSWORD", "PGPASSWORD")
+	name := getenvAny("DB_NAME", "PGDATABASE")
+	sslmode := getenvAny("DB_SSLMODE", "PGSSLMODE")
 
 	if strings.TrimSpace(host) == "" || strings.TrimSpace(port) == "" || strings.TrimSpace(user) == "" || strings.TrimSpace(name) == "" {
 		return ""
@@ -101,7 +118,7 @@ func resolveDatabaseURL() string {
 
 func validateResolvedDSN(dsn string) error {
 	if strings.TrimSpace(dsn) == "" {
-		return errors.New("database configuration missing: set DATABASE_URL or DB_HOST, DB_PORT, DB_USER, DB_NAME")
+		return errors.New("database configuration missing: set DATABASE_URL (or POSTGRES_URL) or DB_HOST/DB_PORT/DB_USER/DB_NAME")
 	}
 
 	return nil
