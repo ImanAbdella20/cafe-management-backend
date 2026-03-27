@@ -1,0 +1,279 @@
+{
+  "info": {
+    "name": "Cafe Management - Inventory Purchase Approval",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@example.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": "Admin@123"
+    },
+    {
+      "key": "branchId",
+      "value": "00000000-0000-0000-0000-000000000001"
+    },
+    {
+      "key": "purchaseQty",
+      "value": "15"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login returns 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Login response includes token', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('token');",
+              "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+              "  pm.collectionVariables.set('authToken', body.token);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create Inventory Item",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test Beans {{$timestamp}}\",\n  \"unit\": \"kg\",\n  \"low_stock_threshold\": 2\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/inventory",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventory"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Create inventory item returns 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Create inventory item returns id', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('id');",
+              "  pm.collectionVariables.set('itemId', body.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Create Purchase Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"item_id\": \"{{itemId}}\",\n  \"branch_id\": \"{{branchId}}\",\n  \"quantity\": {{purchaseQty}}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/inventory/purchase-requests",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventory",
+            "purchase-requests"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Create purchase request returns 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Purchase request is pending and has id', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('id');",
+              "  pm.expect(body).to.have.property('status', 'pending');",
+              "  pm.collectionVariables.set('purchaseRequestId', body.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Approve Purchase Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"note\": \"Approved from Postman test\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/inventory/purchase-requests/{{purchaseRequestId}}/approve",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventory",
+            "purchase-requests",
+            "{{purchaseRequestId}}",
+            "approve"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Approve purchase request returns 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Approval updates purchase status and stock', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.purchase_request.status).to.eql('approved');",
+              "  pm.expect(body.stock.branch_id).to.eql(pm.collectionVariables.get('branchId'));",
+              "  pm.expect(body.movement.movement_type).to.eql('purchase_approved');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Verify Item Stocks",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/inventory/{{itemId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventory",
+            "{{itemId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Get item returns 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Stock exists for target branch with expected quantity', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('stocks');",
+              "  pm.expect(body.stocks).to.be.an('array');",
+              "",
+              "  const branchId = pm.collectionVariables.get('branchId');",
+              "  const targetStock = body.stocks.find(function (stock) {",
+              "    return stock.branch_id === branchId;",
+              "  });",
+              "",
+              "  pm.expect(targetStock, 'branch stock not found').to.exist;",
+              "  pm.expect(targetStock.quantity).to.eql(Number(pm.collectionVariables.get('purchaseQty')));",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
