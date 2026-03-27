@@ -26,6 +26,11 @@ func resolveEnvDatabaseURL() string {
 		return ""
 	}
 
+	// Railway private hostnames are only reachable in Railway runtime.
+	if strings.Contains(databaseURL, ".railway.internal") && strings.TrimSpace(os.Getenv("RAILWAY_ENVIRONMENT")) == "" {
+		return ""
+	}
+
 	return databaseURL
 }
 
