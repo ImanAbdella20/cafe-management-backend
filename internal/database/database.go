@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -47,6 +48,10 @@ func resolveDatabaseDSN() string {
 	name := os.Getenv("DB_NAME")
 	sslmode := os.Getenv("DB_SSLMODE")
 
+	if strings.TrimSpace(host) == "" || strings.TrimSpace(port) == "" || strings.TrimSpace(user) == "" || strings.TrimSpace(name) == "" {
+		return ""
+	}
+
 	if strings.TrimSpace(sslmode) == "" {
 		sslmode = "disable"
 	}
@@ -75,6 +80,10 @@ func resolveDatabaseURL() string {
 	name := os.Getenv("DB_NAME")
 	sslmode := os.Getenv("DB_SSLMODE")
 
+	if strings.TrimSpace(host) == "" || strings.TrimSpace(port) == "" || strings.TrimSpace(user) == "" || strings.TrimSpace(name) == "" {
+		return ""
+	}
+
 	if strings.TrimSpace(sslmode) == "" {
 		sslmode = "disable"
 	}
@@ -90,10 +99,28 @@ func resolveDatabaseURL() string {
 	)
 }
 
+func validateResolvedDSN(dsn string) error {
+	if strings.TrimSpace(dsn) == "" {
+		return errors.New("database configuration missing: set DATABASE_URL or DB_HOST, DB_PORT, DB_USER, DB_NAME")
+	}
+
+	return nil
+}
+
 func Connect() (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(resolveDatabaseDSN()), &gorm.Config{})
+	dsn := resolveDatabaseDSN()
+	if err := validateResolvedDSN(dsn); err != nil {
+		return nil, err
+	}
+
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
 
 func ConnectPGXPool() (*pgxpool.Pool, error) {
-	return pgxpool.New(context.Background(), resolveDatabaseURL())
+	databaseURL := resolveDatabaseURL()
+	if err := validateResolvedDSN(databaseURL); err != nil {
+		return nil, err
+	}
+
+	return pgxpool.New(context.Background(), databaseURL)
 }
