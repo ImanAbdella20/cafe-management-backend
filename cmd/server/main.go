@@ -19,10 +19,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := db.AutoMigrate(&user.User{}); err != nil {
+	if err := database.AutoMigrateAll(db); err != nil {
 		log.Fatal(err)
 	}
-	log.Println("auto migration completed")
+	log.Println("database migration completed")
 
 	if err := user.CreateAdminIfNotExists(db); err != nil {
 		log.Fatal(err)

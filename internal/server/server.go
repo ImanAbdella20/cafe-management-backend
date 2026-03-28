@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -44,16 +43,6 @@ func Run(addr string, db *gorm.DB) error {
 		return err
 	}
 	defer pgxPool.Close()
-
-	if err := orders.EnsureSchema(context.Background(), pgxPool); err != nil {
-		return err
-	}
-	if err := payment.EnsureSchema(context.Background(), pgxPool); err != nil {
-		return err
-	}
-	if err := inventory.EnsureSchema(context.Background(), pgxPool); err != nil {
-		return err
-	}
 
 	categoryRepo := category.NewRepository(pgxPool)
 	categoryService := category.NewService(categoryRepo)
