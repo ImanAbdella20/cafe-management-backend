@@ -34,8 +34,10 @@ func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
 		}
 	})))
 	rolesHandler := middleware.AuthMiddleware(adminOrManager(http.HandlerFunc(handler.ListRoles)))
+	currentUserHandler := middleware.AuthMiddleware(http.HandlerFunc(handler.GetCurrentUser))
 
 	mux.Handle("/users", usersHandler)
+	mux.Handle("/users/me", currentUserHandler)
 	mux.Handle("/users/{id}", userByIDHandler)
 	mux.Handle("/users/{id}/shifts", userShiftsHandler)
 	mux.Handle("/users/status", updateStatusHandler)

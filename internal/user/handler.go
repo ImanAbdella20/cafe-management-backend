@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"backend/internal/middleware"
 )
 
 type Handler struct {
@@ -36,6 +38,18 @@ type assignShiftRequest struct {
 	ShiftDate string `json:"shift_date"`
 	StartTime string `json:"start_time"`
 	EndTime   string `json:"end_time"`
+}
+
+type currentUserProfileResponse struct {
+	ID        uint   `json:"id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Role      string `json:"role"`
+	BranchID  string `json:"branch_id"`
+	IsActive  bool   `json:"is_active"`
+	CreatedAt any    `json:"created_at"`
+	UpdatedAt any    `json:"updated_at"`
 }
 
 func NewHandler(service *Service) *Handler {
@@ -98,6 +112,44 @@ func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, user)
+}
+
+func (h *Handler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	authUser, ok := middleware.UserFromContext(r.Context())
+	if !ok || authUser.UserID == 0 {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	u, err := h.service.GetUserByID(r.Context(), authUser.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrInvalidInput):
+			writeError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, ErrNotFound):
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "internal server error")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, currentUserProfileResponse{
+		ID:        u.ID,
+		Name:      u.Name,
+		Email:     u.Email,
+		Password:  u.Password,
+		Role:      u.Role,
+		BranchID:  u.BranchID,
+		IsActive:  u.IsActive,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	})
 }
 
 func (h *Handler) ListShiftsByUserID(w http.ResponseWriter, r *http.Request) {

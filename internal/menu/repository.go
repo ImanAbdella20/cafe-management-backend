@@ -81,9 +81,11 @@ func (r *repository) GetAll(ctx context.Context) ([]MenuItem, error) {
 
 func (r *repository) GetAllWithActivePrice(ctx context.Context) ([]MenuItemWithPrice, error) {
 	query := `
-	SELECT m.id, m.name, m.description, m.image_url, m.is_available,
+	SELECT m.id, m.category_id, COALESCE(c.name, ''), m.name, m.description, m.image_url, m.is_available,
 	       p.amount, p.currency
 	FROM menu_items m
+	LEFT JOIN categories c
+		ON m.category_id = c.id
 	LEFT JOIN prices p
 		ON m.id = p.item_id AND p.is_active = true
 	ORDER BY m.id ASC
@@ -98,11 +100,14 @@ func (r *repository) GetAllWithActivePrice(ctx context.Context) ([]MenuItemWithP
 	var items []MenuItemWithPrice
 	for rows.Next() {
 		var item MenuItemWithPrice
+		var categoryID sql.NullInt32
 		var price sql.NullFloat64
 		var currency sql.NullString
 
 		if err := rows.Scan(
 			&item.ID,
+			&categoryID,
+			&item.CategoryName,
 			&item.Name,
 			&item.Description,
 			&item.ImageURL,
@@ -111,6 +116,11 @@ func (r *repository) GetAllWithActivePrice(ctx context.Context) ([]MenuItemWithP
 			&currency,
 		); err != nil {
 			return nil, err
+		}
+
+		if categoryID.Valid {
+			value := int(categoryID.Int32)
+			item.CategoryID = &value
 		}
 
 		if price.Valid {

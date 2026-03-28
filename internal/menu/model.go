@@ -40,11 +40,13 @@ type CreateMenuItemResponse struct {
 }
 
 type MenuItemWithPrice struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	ImageURL    string  `json:"image_url"`
-	IsAvailable bool    `json:"is_available"`
-	Price       float64 `json:"price"`
-	Currency    string  `json:"currency"`
+	ID           int     `json:"id"`
+	CategoryID   *int    `json:"category_id"`
+	CategoryName string  `json:"category_name"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	ImageURL     string  `json:"image_url"`
+	IsAvailable  bool    `json:"is_available"`
+	Price        float64 `json:"price"`
+	Currency     string  `json:"currency"`
 }
